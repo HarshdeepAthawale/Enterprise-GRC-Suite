@@ -11,7 +11,93 @@ Organizations spend an average of 11 weeks per year on manual compliance tasks. 
 - Detect compliance drift between audit cycles
 - Produce evidence packages that auditors accept without back-and-forth
 
-## Solution
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph Collectors["EVIDENCE COLLECTORS"]
+        AWS[AWS Collectors<br/>S3 / IAM / SG / CloudTrail / EC2]
+        INFRA[Infra Collectors<br/>SSH / TLS / Patch / Disk / Auditd]
+        GCP[GCP Collectors<br/>Phase 5]
+        AZURE[Azure Collectors<br/>Phase 5]
+    end
+
+    subgraph Engine["EVALUATION ENGINE"]
+        REG[Collector Registry<br/>control → collector mapping]
+        EVAL[Evaluation Engine<br/>run check → pass/fail]
+        CHAIN[Evidence Chain<br/>Merkle hash per control]
+    end
+
+    subgraph Storage["DATA LAYER"]
+        DB[(PostgreSQL 16<br/>JSONB evidence blobs)]
+        REDIS[(Redis<br/>Task queue + cache)]
+    end
+
+    subgraph Scheduler["SCHEDULER"]
+        BEAT[Celery Beat<br/>Priority queues]
+        WORKER[Celery Worker<br/>Async execution]
+        DRIFT[Drift Detector<br/>pass→fail alerts]
+    end
+
+    subgraph API["API LAYER"]
+        FAST[FastAPI<br/>REST endpoints]
+        AUTH[JWT Auth]
+        EXPORT[OSCAL / PDF / Excel]
+    end
+
+    subgraph Frontend["FRONTEND"]
+        REACT[React 19 + TypeScript]
+        DASH[Compliance Dashboard]
+        HEAT[Control Heat Map]
+        RISK[Risk Matrix 5×5]
+    end
+
+    subgraph Frameworks["COMPLIANCE FRAMEWORKS"]
+        NIST[NIST CSF 2.0]
+        ISO[ISO 27001<br/>Phase 2]
+        SOC[SOC 2<br/>Phase 2]
+        HIPAA[HIPAA<br/>Phase 2]
+        GDPR[GDPR<br/>Phase 2]
+    end
+
+    AWS --> REG
+    INFRA --> REG
+    GCP --> REG
+    AZURE --> REG
+    REG --> EVAL
+    EVAL --> CHAIN
+    CHAIN --> DB
+    BEAT --> WORKER
+    WORKER --> EVAL
+    DRIFT --> DB
+    DB --> FAST
+    FAST --> AUTH
+    FAST --> EXPORT
+    FAST --> REACT
+    REACT --> DASH
+    REACT --> HEAT
+    REACT --> RISK
+    DB -.-> Frameworks
+```
+
+**Gemara 7-Layer Alignment**
+
+```mermaid
+flowchart LR
+    L1[1. Standards] --> L2[2. Catalogs]
+    L2 --> L3[3. Controls]
+    L3 --> L4[4. Collectors]
+    L4 --> L5[5. Evaluation]
+    L5 --> L6[6. Risk]
+    L6 --> L7[7. Reporting]
+    style L1 fill:#e1f5fe
+    style L2 fill:#e1f5fe
+    style L3 fill:#e1f5fe
+    style L4 fill:#c8e6c9
+    style L5 fill:#c8e6c9
+    style L6 fill:#fff9c4
+    style L7 fill:#fff9c4
+```
 
 Enterprise GRC Suite is a production-grade automated auditing platform built on the OpenSSF Gemara 7-layer GRC engineering model. It replaces manual evidence gathering with plugin-based collectors, maps all evidence through a Common Control Library (CCL) to any number of frameworks simultaneously, and continuously monitors for drift.
 
