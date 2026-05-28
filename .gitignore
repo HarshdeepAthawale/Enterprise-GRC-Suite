@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.venv/
+node_modules/
+dist/
+.vite/
+.vscode/
+*.db
+*.log
+.DS_Store
+celerybeat-schedule
+.pytest_cache/
+*.pyc
